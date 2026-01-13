@@ -305,7 +305,7 @@
         }
 
         function borrar(key, nombre) {
-            if(confirm(`¿ELIMINAR PERMANENTEMENTE A ${nombre}?`)) {
+            if(confirm(`Â¿ELIMINAR PERMANENTEMENTE A ${nombre}?`)) {
                 database.ref('registros').child(key).remove();
                 registrarLog(`ELIMINO REGISTRO: ${nombre}`);
             }
@@ -325,4 +325,5 @@
         }
     </script>
 </body>
+
 </html>
