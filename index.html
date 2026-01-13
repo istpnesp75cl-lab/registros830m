@@ -70,7 +70,7 @@
             </div>
 
             <div id="area-supervisor" class="card oculto" style="border: 2px solid var(--purpura);">
-                <label style="color:var(--purpura);">AUDITORÕA CALO - Logs</label>
+                <label style="color:var(--purpura);">AUDITOR√çA CALO - Logs</label>
                 <div id="log-contenedor" style="max-height: 120px; overflow-y: auto; background: #000; padding: 10px;"></div>
             </div>
 
@@ -182,7 +182,7 @@
             const ap = limpiar(document.getElementById("f-ap").value);
             const d = { ap: ap, nom: limpiar(document.getElementById("f-nom").value), nac: limpiar(document.getElementById("f-nac").value), ci: document.getElementById("f-id").value, ser: document.getElementById("f-ser").value, sub: document.getElementById("f-sub").value || "N/A", ub: document.getElementById("f-ub").value, gdo: document.getElementById("f-gdo").value === "SI" ? limpiar(document.getElementById("f-gn").value) : "NO", al: limpiar(document.getElementById("f-al").value), mo: limpiar(document.getElementById("f-mo").value), fotos: fotosTemporales, user: userLog, t: new Date().toLocaleString(), fechaIso: new Date().toISOString().split('T')[0] };
             if(!d.ap || !d.ub) return alert("FALTAN DATOS O GPS");
-            db.ref('registros').push(d).then(() => { logAccion("REGISTRO", "CreÛ a " + ap); location.reload(); });
+            db.ref('registros').push(d).then(() => { logAccion("REGISTRO", "Cre√≥ a " + ap); location.reload(); });
         }
 
         function iniciarEscucha() {
@@ -219,7 +219,7 @@
         async function genPDFGlobalVisual() {
             const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
             doc.setTextColor(230, 230, 230); doc.setFontSize(80); doc.text("CALO", 100, 100, { angle: 45 });
-            doc.setTextColor(0,0,0); doc.setFontSize(16); doc.text("REPORTE OPERATIVO - AUTORÕA CALO", 10, 15);
+            doc.setTextColor(0,0,0); doc.setFontSize(16); doc.text("REPORTE OPERATIVO - AUTOR√çA CALO", 10, 15);
             
             const fil = datosMemoria.map(x => ["", x.t, x.ap, x.ci, x.ser, x.mo]);
             doc.autoTable({ startY: 20, head: [['FOTO', 'FECHA', 'SUJETO', 'ID', 'SERV', 'MOTIVO']], body: fil, didDrawCell: (d) => { if (d.column.index === 0 && d.cell.section === 'body' && datosMemoria[d.row.index].fotos && datosMemoria[d.row.index].fotos[0]) doc.addImage(datosMemoria[d.row.index].fotos[0], 'JPEG', d.cell.x+2, d.cell.y+2, 20, 20); }, styles: { minCellHeight: 25, verticalAlign: 'middle', fontSize: 9 } });
@@ -227,7 +227,7 @@
             if(mapaAdmin) { 
                 const cv = await html2canvas(document.getElementById("map-admin")); doc.addPage();
                 doc.setTextColor(230, 230, 230); doc.setFontSize(80); doc.text("CALO", 100, 100, { angle: 45 });
-                doc.setTextColor(0,0,0); doc.text("MAPA ESTRAT…GICO", 10, 15); doc.addImage(cv.toDataURL("image/png"), 'PNG', 10, 20, 260, 120); 
+                doc.setTextColor(0,0,0); doc.text("MAPA ESTRAT√âGICO", 10, 15); doc.addImage(cv.toDataURL("image/png"), 'PNG', 10, 20, 260, 120); 
             }
             doc.save("REPORTE_CALO.pdf");
         }
@@ -238,7 +238,7 @@
             XLSX.writeFile(wb, "DATOS_CALO.xlsx");
         }
 
-        function eliminar(k) { if(confirm("øELIMINAR?")) { logAccion("BORRADO", "Registro eliminado"); db.ref('registros').child(k).remove(); } }
+        function eliminar(k) { if(confirm("¬øELIMINAR?")) { logAccion("BORRADO", "Registro eliminado"); db.ref('registros').child(k).remove(); } }
         function buscarEnTabla() { const b = document.getElementById("buscador").value.toUpperCase(); const fil = document.getElementById("tabla-cuerpo").getElementsByTagName("tr"); for (let f of fil) { if(!f.id.startsWith("det")) f.style.display = f.innerText.toUpperCase().includes(b) ? "" : "none"; } }
     </script>
 </body>
