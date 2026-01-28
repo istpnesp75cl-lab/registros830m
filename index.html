@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA TACTICO CALO - FINAL V14</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --azul: #0D1B3E; --oro: #C5A059; --negro: #121212; --gris: #1E1E1E; --rojo: #D32F2F; --verde: #2E7D32; --purpura: #6A1B9A; }
+        * { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+        
+        /* MARCA DE AGUA PANTALLA */
+        body::before { content: "CALO"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 15rem; color: rgba(197, 160, 89, 0.05); z-index: -1; font-weight: 900; pointer-events: none; }
+
+        body { background: var(--negro); margin: 0; color: #E0E0E0; background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b5/Manuela_S%C3%A1enz.jpg'); background-repeat: no-repeat; background-attachment: fixed; background-position: center; background-size: contain; background-blend-mode: overlay; }
+        .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 15px; }
+        .header { background: linear-gradient(135deg, var(--azul) 0%, #1a2a5a 100%); padding: 15px; text-align: center; border-radius: 12px 12px 0 0; border-bottom: 4px solid var(--oro); position: relative; }
+        .btn-salir { position: absolute; top: 10px; right: 10px; background: var(--rojo); color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .card { background: rgba(30, 30, 30, 0.95); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(197, 160, 89, 0.2); backdrop-filter: blur(5px); }
+        label { font-size: 11px; font-weight: 700; color: var(--oro); text-transform: uppercase; display: block; margin-bottom: 4px; }
+        input, select { padding: 12px; border: 1px solid #444; border-radius: 6px; width: 100%; background: #222; color: white; margin-bottom: 10px; font-size: 14px; }
+        .btn-p { background: var(--azul); color: white; padding: 15px; font-weight: bold; border: 1px solid var(--oro); width: 100%; border-radius: 8px; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
+        .oculto { display: none !important; }
+        #login-box { max-width:350px; margin:80px auto; background: var(--gris); padding:35px; border-radius:15px; text-align:center; border-top: 8px solid var(--oro); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: rgba(0,0,0,0.6); color: var(--oro); padding: 10px; text-align: left; font-size: 11px; border-bottom: 2px solid var(--oro); }
+        td { padding: 10px; border-bottom: 1px solid #333; font-size: 13px; }
+        
+        /* MODAL PARA AMPLIAR FOTOS */
+        #modal-img { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); text-align: center; padding-top: 50px; }
+        #modal-img img { max-width: 90%; max-height: 80%; border: 3px solid var(--oro); }
+        .cerrar-modal { color: white; position: absolute; top: 20px; right: 30px; font-size: 40px; cursor: pointer; }
+
+        .img-previa { width: 60px; height: 60px; object-fit: cover; margin: 3px; border: 1px solid var(--oro); cursor: zoom-in; }
+        .audit-row { font-size: 10px; color: #aaa; border-left: 3px solid var(--purpura); padding-left: 5px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="modal-img">
+        <span class="cerrar-modal" onclick="this.parentElement.style.display='none'">&times;</span>
+        <img id="img-full">
+        <h2 style="color:var(--oro); font-family: 'Impact'; opacity: 0.5;">AUTORIA CALO</h2>
+    </div>
+
+    <div id="login-box">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Escudo_de_la_Polic%C3%ADa_Nacional_del_Ecuador.svg/800px-Escudo_de_la_Polic%C3%ADa_Nacional_del_Ecuador.svg.png" style="height:70px; margin-bottom:15px;">
+        <h2 style="color:var(--oro); margin:0;">CONTROL CENTRAL</h2>
+        <p style="font-size: 10px; color: gray;">SISTEMA CALO V14</p><br>
+        <input type="text" id="user" placeholder="USUARIO">
+        <input type="password" id="pass" placeholder="CLAVE">
+        <button class="btn-p" onclick="entrar()">INGRESAR</button>
+    </div>
+
+    <div id="panel" class="oculto">
+        <div class="container">
+            <div class="header">
+                <button class="btn-salir" onclick="location.reload()">SALIR</button>
+                <h2 id="titulo-panel" style="margin: 0; color:white; font-size: 18px;">PANEL OPERATIVO</h2>
+                <div id="r-tag" style="color:var(--oro); font-size: 10px; font-weight: bold; margin-top: 5px;"></div>
+            </div>
+
+            <div id="area-supervisor" class="card oculto" style="border: 2px solid var(--purpura);">
+                <label style="color:var(--purpura);">AUDITORÍA CALO - Logs</label>
+                <div id="log-contenedor" style="max-height: 120px; overflow-y: auto; background: #000; padding: 10px;"></div>
+            </div>
+
+            <div id="area-admin" class="card oculto" style="border: 2px solid var(--oro);">
+                <label>Filtros y Descargas</label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <input type="date" id="d-desde"> <input type="date" id="d-hasta">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn-p" style="background:var(--verde); margin:0;" onclick="descargarExcel()">EXCEL</button>
+                    <button class="btn-p" style="background:#444; margin:0;" onclick="genPDFGlobalVisual()">PDF TOTAL</button>
+                </div>
+                <div id="map-admin" style="height:250px; margin-top:10px; border-radius:8px;"></div>
+            </div>
+
+            <div class="card">
+                <button class="btn-p" style="background:#2c3e50; color:gold;" onclick="gps()">CAPTURAR GPS</button>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-top:15px;">
+                    <input type="text" id="f-ap" placeholder="APELLIDOS">
+                    <input type="text" id="f-nom" placeholder="NOMBRES">
+                    <input type="text" id="f-nac" placeholder="NACIONALIDAD">
+                    <input type="text" id="f-id" placeholder="CEDULA">
+                    <select id="f-ser" onchange="actualizarSub()"><option value="GOM">GOM</option><option value="CIRCUITOS">CIRCUITOS</option><option value="OTROS">OTROS</option></select>
+                    <div id="div-sub" class="oculto"><select id="f-sub"></select></div>
+                    <input type="text" id="f-ub" placeholder="GPS" readonly style="grid-column: span 2;">
+                    <select id="f-gdo" onchange="document.getElementById('div-gn').classList.toggle('oculto', this.value==='NO')"><option value="NO">GDO: NO</option><option value="SI">GDO: SI</option></select>
+                    <div id="div-gn" class="oculto"><input type="text" id="f-gn" placeholder="NOMBRE GDO"></div>
+                    <input type="text" id="f-al" placeholder="ALIAS">
+                    <input type="text" id="f-mo" placeholder="MOTIVO / NOVEDAD" style="grid-column: span 2;">
+                </div>
+                <input type="file" id="f-fotos" multiple accept="image/*" class="oculto" onchange="procesarImagenes(this)">
+                <button class="btn-p" style="background:#333;" onclick="document.getElementById('f-fotos').click()">FOTOS (MAX 10)</button>
+                <div id="previa-contenedor" style="display:flex; flex-wrap:wrap; margin-top:10px;"></div>
+                <button class="btn-p" onclick="guardarRegistro()">GUARDAR</button>
+            </div>
+
+            <div class="card">
+                <input type="text" id="buscador" onkeyup="buscarEnTabla()" placeholder="BUSCAR...">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>SUJETO</th><th>SERV</th><th>VER</th><th>ELIM</th></tr></thead>
+                        <tbody id="tabla-cuerpo"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyC3MB5jvxF0udIQNzf2P0_-8DmIs-8lE2E", authDomain: "sistema830m.firebaseapp.com", databaseURL: "https://sistema830m-default-rtdb.firebaseio.com", projectId: "sistema830m", storageBucket: "sistema830m.firebasestorage.app", messagingSenderId: "594923117556", appId: "1:594923117556:web:311f1859a224d62c3337a1" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let rol = "operativo"; let userLog = ""; let datosMemoria = []; let fotosTemporales = []; let mapaAdmin; let marcadoresMap = [];
+
+        // ENTER PARA INGRESAR Y GUARDAR
+        document.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+                if (!document.getElementById("login-box").classList.contains("oculto")) entrar();
+                else if (document.activeElement.id === "f-mo") guardarRegistro();
+                else if (document.activeElement.id === "buscador") buscarEnTabla();
+            }
+        });
+
+        function entrar() {
+            const u = document.getElementById("user").value.toLowerCase().trim();
+            const p = document.getElementById("pass").value.trim();
+            userLog = u.toUpperCase();
+            if(u === "control" && p === "3030") { rol = "supervisor"; document.getElementById("area-supervisor").classList.remove("oculto"); document.getElementById("area-admin").classList.remove("oculto"); }
+            else if(u === "mando" && p === "2020") { rol = "admin"; document.getElementById("area-admin").classList.remove("oculto"); }
+            else if(u === "policia" && p === "1010") { rol = "operativo"; }
+            else { return alert("ERROR"); }
+            document.getElementById("login-box").classList.add("oculto");
+            document.getElementById("panel").classList.remove("oculto");
+            document.getElementById("r-tag").innerText = "AUTH: " + userLog + " | CALO";
+            if(rol !== 'operativo') initMapaAdmin();
+            iniciarEscucha();
+            logAccion("LOGIN", "Entrada");
+        }
+
+        function logAccion(a, d) { db.ref('auditoria').push({ fecha: new Date().toLocaleString(), usuario: userLog, accion: a, detalle: d }); }
+        function initMapaAdmin() { if(!mapaAdmin) { mapaAdmin = L.map('map-admin').setView([-0.21, -78.51], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaAdmin); } }
+
+        function ampliar(src) { document.getElementById("img-full").src = src; document.getElementById("modal-img").style.display = "block"; }
+
+        function procesarImagenes(input) {
+            Array.from(input.files).forEach(f => {
+                const reader = new FileReader();
+                reader.onload = e => { 
+                    fotosTemporales.push(e.target.result); 
+                    const img = document.createElement("img"); img.src = e.target.result; img.className = "img-previa";
+                    img.onclick = () => ampliar(e.target.result);
+                    document.getElementById("previa-contenedor").appendChild(img);
+                };
+                reader.readAsDataURL(f);
+            });
+        }
+
+        function limpiar(t) { return t ? t.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : ""; }
+        function gps() { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p => { document.getElementById('f-ub').value = `${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}`; }); }
+
+        function actualizarSub() {
+            const s = document.getElementById("f-ser").value; const d = document.getElementById("div-sub"); const sel = document.getElementById("f-sub");
+            const opt = { "CIRCUITOS": ["LIBERTAD", "PLACER", "SAN JUAN", "ITCHIMBIA", "CENTRO HISTORICO", "PANECILLO", "MONJAS", "PUENGASI"], "OTROS": ["QR'S", "CORREDORES", "RONDA COMERCIO"] };
+            if (opt[s]) { d.classList.remove("oculto"); sel.innerHTML = opt[s].map(x => `<option value="${x}">${x}</option>`).join(''); } else d.classList.add("oculto");
+        }
+
+        function guardarRegistro() {
+            const ap = limpiar(document.getElementById("f-ap").value);
+            const d = { ap: ap, nom: limpiar(document.getElementById("f-nom").value), nac: limpiar(document.getElementById("f-nac").value), ci: document.getElementById("f-id").value, ser: document.getElementById("f-ser").value, sub: document.getElementById("f-sub").value || "N/A", ub: document.getElementById("f-ub").value, gdo: document.getElementById("f-gdo").value === "SI" ? limpiar(document.getElementById("f-gn").value) : "NO", al: limpiar(document.getElementById("f-al").value), mo: limpiar(document.getElementById("f-mo").value), fotos: fotosTemporales, user: userLog, t: new Date().toLocaleString(), fechaIso: new Date().toISOString().split('T')[0] };
+            if(!d.ap || !d.ub) return alert("FALTAN DATOS O GPS");
+            db.ref('registros').push(d).then(() => { logAccion("REGISTRO", "Creó a " + ap); location.reload(); });
+        }
+
+        function iniciarEscucha() {
+            db.ref('registros').on('value', s => {
+                datosMemoria = []; const cuerpo = document.getElementById("tabla-cuerpo"); cuerpo.innerHTML = "";
+                marcadoresMap.forEach(m => mapaAdmin && mapaAdmin.removeLayer(m)); marcadoresMap = [];
+                s.forEach(h => {
+                    const v = h.val(); v.key = h.key; datosMemoria.push(v);
+                    if(rol !== 'operativo' && v.ub && mapaAdmin) {
+                        const m = L.marker([v.ub.split(',')[0], v.ub.split(',')[1]]).addTo(mapaAdmin).bindPopup(v.ap); marcadoresMap.push(m);
+                    }
+                    cuerpo.innerHTML += `<tr><td><b>${v.ap}</b></td><td>${v.ser}</td><td><button onclick="ver('${v.key}')">???</button></td><td>${rol!=='operativo'?`<button onclick="eliminar('${v.key}')" style="color:red">X</button>`:''}</td></tr>
+                    <tr id="det-${v.key}" class="oculto"><td colspan="4" style="background:#222; font-size:11px;">
+                        <b>ID:</b> ${v.ci} | <b>FECHA:</b> ${v.t}<br><b>GDO:</b> ${v.gdo} | <b>MOTIVO:</b> ${v.mo}<br><div id="imgs-${v.key}" style="display:flex; flex-wrap:wrap; margin-top:5px;"></div></td></tr>`;
+                });
+            });
+            if(rol === 'supervisor') {
+                db.ref('auditoria').limitToLast(10).on('value', s => {
+                    const cont = document.getElementById("log-contenedor"); cont.innerHTML = "";
+                    s.forEach(h => { const v = h.val(); cont.innerHTML = `<div class="audit-row"><b>CALO [${v.fecha.split(',')[1]}]</b> - ${v.usuario}: ${v.accion}</div>` + cont.innerHTML; });
+                });
+            }
+        }
+
+        function ver(k) {
+            document.getElementById(`det-${k}`).classList.toggle("oculto");
+            const it = datosMemoria.find(x => x.key === k); const div = document.getElementById(`imgs-${k}`); div.innerHTML = "";
+            if(it.fotos) it.fotos.forEach(f => {
+                const img = document.createElement("img"); img.src = f; img.style = "width:60px; height:60px; margin:3px; border:1px solid #555; cursor:zoom-in;";
+                img.onclick = () => ampliar(f); div.appendChild(img);
+            });
+        }
+
+        async function genPDFGlobalVisual() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4');
+            doc.setTextColor(230, 230, 230); doc.setFontSize(80); doc.text("CALO", 100, 100, { angle: 45 });
+            doc.setTextColor(0,0,0); doc.setFontSize(16); doc.text("REPORTE OPERATIVO - AUTORÍA CALO", 10, 15);
+            
+            const fil = datosMemoria.map(x => ["", x.t, x.ap, x.ci, x.ser, x.mo]);
+            doc.autoTable({ startY: 20, head: [['FOTO', 'FECHA', 'SUJETO', 'ID', 'SERV', 'MOTIVO']], body: fil, didDrawCell: (d) => { if (d.column.index === 0 && d.cell.section === 'body' && datosMemoria[d.row.index].fotos && datosMemoria[d.row.index].fotos[0]) doc.addImage(datosMemoria[d.row.index].fotos[0], 'JPEG', d.cell.x+2, d.cell.y+2, 20, 20); }, styles: { minCellHeight: 25, verticalAlign: 'middle', fontSize: 9 } });
+            
+            if(mapaAdmin) { 
+                const cv = await html2canvas(document.getElementById("map-admin")); doc.addPage();
+                doc.setTextColor(230, 230, 230); doc.setFontSize(80); doc.text("CALO", 100, 100, { angle: 45 });
+                doc.setTextColor(0,0,0); doc.text("MAPA ESTRATÉGICO", 10, 15); doc.addImage(cv.toDataURL("image/png"), 'PNG', 10, 20, 260, 120); 
+            }
+            doc.save("REPORTE_CALO.pdf");
+        }
+
+        function descargarExcel() {
+            const ws = XLSX.utils.json_to_sheet(datosMemoria.map(x => ({ FECHA: x.t, APELLIDO: x.ap, MOTIVO: x.mo, GPS: x.ub, AUTOR: "CALO" })));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Datos");
+            XLSX.writeFile(wb, "DATOS_CALO.xlsx");
+        }
+
+        function eliminar(k) { if(confirm("¿ELIMINAR?")) { logAccion("BORRADO", "Registro eliminado"); db.ref('registros').child(k).remove(); } }
+        function buscarEnTabla() { const b = document.getElementById("buscador").value.toUpperCase(); const fil = document.getElementById("tabla-cuerpo").getElementsByTagName("tr"); for (let f of fil) { if(!f.id.startsWith("det")) f.style.display = f.innerText.toUpperCase().includes(b) ? "" : "none"; } }
+    </script>
+</body>
+</html>
